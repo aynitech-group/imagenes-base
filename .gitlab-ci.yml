@@ -1,0 +1,75 @@
+# CI del catálogo de bases doradas. Corre en el runner de JERJES (etiqueta
+# jerjes) con acceso al Docker del host para construir imágenes.
+#
+# Tres caminos:
+#  - Rama / Merge Request  -> verificar: construye cada base y le pasa Trivy.
+#  - main                  -> publicar: construye y publica a ghcr, imprime FROM.
+#  - Schedule (medianoche) -> actualizar: si upstream publicó digest nuevo,
+#                             reconstruye, publica y documenta (huellas.tsv).
+stages: [verificar, publicar]
+
+.docker-base: &docker-base
+  tags: [jerjes]
+  image: docker:28-cli
+
+verificar:
+  <<: *docker-base
+  stage: verificar
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "schedule"
+      when: never
+    - if: $CI_COMMIT_BRANCH != "main"
+  script:
+    - |
+      set -e
+      for df in */*/Dockerfile; do
+        [ -f "$df" ] || continue
+        carpeta=$(dirname "$df")
+        tecno=$(echo "$carpeta" | cut -d/ -f1)
+        ver=$(echo "$carpeta" | cut -d/ -f2)
+        [ "$tecno" = "PLANTILLA" ] && continue
+        img="verificacion/$tecno:$ver"
+        echo "== Construyendo $carpeta ..."
+        docker build -t "$img" "$carpeta"
+        echo "== Trivy sobre $img (ALTA/CRITICA):"
+        docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
+          aquasec/trivy:0.58.2 image --scanners vuln --severity HIGH,CRITICAL \
+          --format table "$img" || true
+        docker rmi "$img" >/dev/null 2>&1 || true
+      done
+
+publicar:
+  <<: *docker-base
+  stage: publicar
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "schedule"
+      when: never
+    - if: $CI_COMMIT_BRANCH == "main"
+  script:
+    - echo "$GITHUB_TOKEN" | docker login ghcr.io -u aynitech-group --password-stdin
+    - |
+      set -e
+      for df in */*/Dockerfile; do
+        [ -f "$df" ] || continue
+        carpeta=$(dirname "$df")
+        tecno=$(echo "$carpeta" | cut -d/ -f1)
+        ver=$(echo "$carpeta" | cut -d/ -f2)
+        [ "$tecno" = "PLANTILLA" ] && continue
+        img="ghcr.io/aynitech-group/$tecno-dorada:$ver"
+        echo "== Construyendo y publicando $img ..."
+        docker build -t "$img" "$carpeta"
+        docker push "$img" | tail -1
+        digest=$(docker inspect --format '{{index .RepoDigests 0}}' "$img" | cut -d@ -f2)
+        echo ""
+        echo ">>> Tu base esta publicada. Usa en tu Dockerfile:"
+        echo ">>> FROM ghcr.io/aynitech-group/$tecno-dorada:$ver@$digest"
+        echo ""
+      done
+
+actualizar-nocturno:
+  <<: *docker-base
+  stage: publicar
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "schedule"
+  script:
+    - sh bin/actualizar-nocturno.sh
