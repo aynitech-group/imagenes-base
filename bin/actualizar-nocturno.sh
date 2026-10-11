@@ -52,15 +52,15 @@ for df in */*/Dockerfile; do
     sed -i "s|$fijado|$vivo|g" "$df"
   fi
 
-  img="ghcr.io/aynitech-group/$tecno-dorada:$ver"
+  img="ghcr.io/aynitech-group/dorada:$tecno-$ver"
   docker build -t "$img" "$carpeta"
   docker push "$img" | tail -1
   publicado=$(docker inspect --format '{{index .RepoDigests 0}}' "$img" | cut -d@ -f2)
 
   # Documentar: historial y README (los digests publicados completos del README
   # se reemplazan por los nuevos; el historial solo crece).
-  viejo_pub=$(grep -F "	$tecno-dorada:$ver	" huellas.tsv | tail -1 | cut -f4 || true)
-  printf '%s\t%s-dorada:%s\t%s@%s\t%s\n' "$HOY" "$tecno" "$ver" "$etiqueta" "$vivo" "$publicado" >> huellas.tsv
+  viejo_pub=$(grep -F "	dorada:$tecno-$ver	" huellas.tsv | tail -1 | cut -f4 || true)
+  printf '%s\tdorada:%s-%s\t%s@%s\t%s\n' "$HOY" "$tecno" "$ver" "$etiqueta" "$vivo" "$publicado" >> huellas.tsv
   if [ -n "$viejo_pub" ] && [ -f README.md ]; then
     sed -i "s|$viejo_pub|$publicado|g" README.md
   fi

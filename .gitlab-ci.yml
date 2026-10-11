@@ -55,14 +55,14 @@ publicar:
         tecno=$(echo "$carpeta" | cut -d/ -f1)
         ver=$(echo "$carpeta" | cut -d/ -f2)
         [ "$tecno" = "PLANTILLA" ] && continue
-        img="ghcr.io/aynitech-group/$tecno-dorada:$ver"
+        img="ghcr.io/aynitech-group/dorada:$tecno-$ver"
         echo "== Construyendo y publicando $img ..."
         docker build -t "$img" "$carpeta"
         docker push "$img" | tail -1
         digest=$(docker inspect --format '{{index .RepoDigests 0}}' "$img" | cut -d@ -f2)
         echo ""
         echo ">>> Tu base esta publicada. Usa en tu Dockerfile:"
-        echo ">>> FROM ghcr.io/aynitech-group/$tecno-dorada:$ver@$digest"
+        echo ">>> FROM ghcr.io/aynitech-group/dorada:$tecno-$ver@$digest"
         echo ""
       done
 
