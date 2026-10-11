@@ -13,6 +13,7 @@ venir de fábrica y no en un `RUN` de tu Dockerfile, que el escáner no ejecuta.
 |---|---|---|---|
 | **postgres-dorada:16** | `FROM ghcr.io/aynitech-group/postgres-dorada:16@sha256:371e74ba9284b1972297726ddca0cdf07f78be6bb73559dc71dd794645aeb0ed` | Parches de Alpine (zlib 1.3.2-r1…) y elimina `gosu`/`su-exec` (binario Go con ~60 CVE de stdlib congelada; innecesario si tu contenedor arranca como `postgres`, que es lo normal) | 0 al publicarse |
 | **postgres-dorada:16-con-gosu** | `FROM ghcr.io/aynitech-group/postgres-dorada:16-con-gosu@sha256:5e5335a79dade4002b614ad252ccb2ff540149ca0b0fe85d5718bfea5fb7384f` | Igual que la estándar, pero CON gosu — recompilado con Go 1.25.14 (el aviso exigía ≥1.25.7); su-exec enlaza al gosu nuevo | 0 al publicarse |
+| **node-dorada:22** | `FROM ghcr.io/aynitech-group/node-dorada:22@PENDIENTE-PRIMERA-PUBLICACION` | Parches de Alpine (zlib 1.3.2-r1…), npm actualizado a la última versión y **cada copia vulnerable** de sus dependencias internas sustituida por la corregida (brace-expansion, ip-address, http-cache-semantics, postcss-selector-parser, undici); retira corepack y yarn (superficie innecesaria). Una aserción en la construcción impide publicar si queda alguna copia por debajo del mínimo corregido | 0 al publicarse |
 
 > ¿Necesitas `gosu`? Usa la variante `16-con-gosu` de la tabla: trae gosu
 > recompilado con el toolchain de Go corregido (verifícalo: `docker run --rm
