@@ -4,7 +4,7 @@
 # del Monitor la usa de runtime). La aserción impide publicar si zlib quedara
 # por debajo de la versión corregida.
 # Catálogo y huellas: https://github.com/aynitech-group/imagenes-base
-FROM alpine:3.22@sha256:822614ea121e1d40a33655081af10ef85f0aa2ab9e61f649ceaf0c651822433c
+FROM alpine:3.22@sha256:d406446bc05b82480756ce8f1287964d28768c23955fa9480d2a74a2eae7a654
 
 RUN set -eu \
  && apk upgrade --no-cache \

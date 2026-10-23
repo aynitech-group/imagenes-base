@@ -16,10 +16,10 @@ un paquete nuevo en ghcr siempre nace privado y exige un clic manual).
 
 | Imagen (tag) | Línea `FROM` lista para copiar | Qué corrige | CVE restantes |
 |---|---|---|---|
-| **dorada:postgres-16** | `FROM ghcr.io/aynitech-group/dorada:postgres-16@sha256:a3ae8a70233dd1c84d8647c11578542224e0bbcbfef6f5f26873cc2953389382` | Parches de Alpine (zlib 1.3.2-r1…) y elimina `gosu`/`su-exec` (binario Go con ~60 CVE de stdlib congelada; innecesario si tu contenedor arranca como `postgres`, que es lo normal) | 0 al publicarse |
-| **dorada:postgres-16-con-gosu** | `FROM ghcr.io/aynitech-group/dorada:postgres-16-con-gosu@sha256:a37eeaf56515764c16a034ea2e94f10bec0308ff2f5478116819c6a15eca3a71` | Igual que la estándar, pero CON gosu — recompilado con Go 1.25.14 (el aviso exigía ≥1.25.7); su-exec enlaza al gosu nuevo | 0 al publicarse |
+| **dorada:postgres-16** | `FROM ghcr.io/aynitech-group/dorada:postgres-16@sha256:40aae66f9f6669bad494e2a10261df63b8776d747e7fad716e9a7ae7c9caed64` | Parches de Alpine (zlib 1.3.2-r1…) y elimina `gosu`/`su-exec` (binario Go con ~60 CVE de stdlib congelada; innecesario si tu contenedor arranca como `postgres`, que es lo normal) | 0 al publicarse |
+| **dorada:postgres-16-con-gosu** | `FROM ghcr.io/aynitech-group/dorada:postgres-16-con-gosu@sha256:961df241cc940f1c823cf8476255b72c1095e7968880f9b0d92e82a5057c23ed` | Igual que la estándar, pero CON gosu — recompilado con Go 1.25.14 (el aviso exigía ≥1.25.7); su-exec enlaza al gosu nuevo | 0 al publicarse |
 | **dorada:node-22** | `FROM ghcr.io/aynitech-group/dorada:node-22@sha256:1a530055206a597adc3c9e2fad66181ec5e553398cb1520ffa72d47588156c9a` | Parches de Alpine, npm actualizado a la última versión y cada copia vulnerable de sus dependencias internas sustituida por la corregida (brace-expansion, ip-address, http-cache-semantics, postcss-selector-parser, undici); retira corepack y yarn. Aserción de mínimos en la construcción | 0 al publicarse |
-| **dorada:alpine-3.22** | `FROM ghcr.io/aynitech-group/dorada:alpine-3.22@sha256:a458bfc0140b115813eb9ebd92c5b07e4ee7f6ead3f87a48d7af10831d125afc` | Todos los parches del sistema publicados tras el digest oficial (zlib 1.3.2-r1…). Pensada como etapa final (runtime) de imágenes multi-stage; aserción de zlib | 0 al publicarse |
+| **dorada:alpine-3.22** | `FROM ghcr.io/aynitech-group/dorada:alpine-3.22@sha256:0d5f04eb964bb28df73d01148b821d91aff6d0c9ad2d8ab5994185bd99903b39` | Todos los parches del sistema publicados tras el digest oficial (zlib 1.3.2-r1…). Pensada como etapa final (runtime) de imágenes multi-stage; aserción de zlib | 0 al publicarse |
 
 > Los nombres antiguos (`postgres-dorada:16`, `postgres-dorada:16-con-gosu`,
 > `node-dorada:22`) siguen publicados y públicos con sus huellas intactas:
