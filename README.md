@@ -29,6 +29,14 @@ un paquete nuevo en ghcr siempre nace privado y exige un clic manual).
 > recompilado con el toolchain de Go corregido (verifícalo: `docker run --rm
 > --entrypoint gosu ghcr.io/aynitech-group/dorada:postgres-16-con-gosu --version`).
 
+## Bases añadidas en octubre de 2026
+
+| Imagen (tag) | Línea `FROM` | Qué corrige |
+|---|---|---|
+| **dorada:python-3.12** | `FROM ghcr.io/aynitech-group/dorada:python-3.12@sha256:55db41fba7d81974af2705141912d524f91dfe21619e4c2bdb4dc03c11d29d25` | Python 3.12.16 sobre Alpine 3.24 con la receta oficial de docker-library (la imagen oficial aún traía 3.12.15) |
+| **dorada:python-3.11** | La imprime el job `publicar` al fusionar | Python 3.11.18 sobre Debian 13 slim con la receta oficial de docker-library (la imagen oficial aún traía 3.11.17) |
+| **dorada:vllm-0.32** | La imprime el job `publicar` al fusionar | vLLM 0.32.0 oficial con las actualizaciones de seguridad de Ubuntu (OpenSSL 3.0.13-0ubuntu3.16; la oficial trae 3.0.13-0ubuntu3.6). Pesa ~23 GB |
+
 ## Verifícala tú mismo
 
 La receta de cada imagen está en su carpeta (p. ej. [`postgres/16/Dockerfile`](postgres/16/Dockerfile)).
