@@ -2,8 +2,11 @@
 # jerjes) con acceso al Docker del host para construir imágenes.
 #
 # Tres caminos:
-#  - Rama / Merge Request  -> verificar: construye cada base y le pasa Trivy.
-#  - main                  -> publicar: construye y publica a ghcr, imprime FROM.
+#  - Rama / Merge Request  -> verificar: construye las bases que cambian y les pasa Trivy.
+#  - main                  -> publicar: construye y publica a ghcr las bases que cambian, imprime FROM.
+#  Solo se reconstruye lo que cambia: la base de vLLM pesa ~23 GB y no debe
+#  reconstruirse y subirse cada vez que se toca otra carpeta. Si cambia el propio
+#  CI o no hay commit de referencia (rama nueva), se construye todo.
 #  - Schedule (medianoche) -> actualizar: si upstream publicó digest nuevo,
 #                             reconstruye, publica y documenta (huellas.tsv).
 stages: [verificar, publicar]
@@ -11,6 +14,19 @@ stages: [verificar, publicar]
 .docker-base: &docker-base
   tags: [jerjes]
   image: docker:28-cli
+  before_script:
+    - apk add --no-cache git >/dev/null 2>&1 || true
+    - |
+      carpetas_a_construir() {
+        base="${CI_MERGE_REQUEST_DIFF_BASE_SHA:-$CI_COMMIT_BEFORE_SHA}"
+        todas=$(for df in */*/Dockerfile; do d=$(dirname "$df"); [ "${d%%/*}" = PLANTILLA ] || echo "$d"; done)
+        if [ -z "$base" ] || [ "$base" = "0000000000000000000000000000000000000000" ] \
+           || ! git cat-file -e "$base^{commit}" 2>/dev/null; then echo "$todas"; return; fi
+        cambios=$(git diff --name-only "$base" "$CI_COMMIT_SHA")
+        if echo "$cambios" | grep -q '^\.gitlab-ci\.yml$'; then echo "$todas"; return; fi
+        for d in $todas; do echo "$cambios" | grep -q "^$d/" && echo "$d"; done
+        return 0
+      }
 
 verificar:
   <<: *docker-base
@@ -22,9 +38,9 @@ verificar:
   script:
     - |
       set -e
-      for df in */*/Dockerfile; do
-        [ -f "$df" ] || continue
-        carpeta=$(dirname "$df")
+      carpetas=$(carpetas_a_construir)
+      [ -n "$carpetas" ] || echo "Ninguna base cambió: nada que construir."
+      for carpeta in $carpetas; do
         tecno=$(echo "$carpeta" | cut -d/ -f1)
         ver=$(echo "$carpeta" | cut -d/ -f2)
         [ "$tecno" = "PLANTILLA" ] && continue
@@ -49,9 +65,9 @@ publicar:
     - echo "$GITHUB_TOKEN" | docker login ghcr.io -u aynitech-group --password-stdin
     - |
       set -e
-      for df in */*/Dockerfile; do
-        [ -f "$df" ] || continue
-        carpeta=$(dirname "$df")
+      carpetas=$(carpetas_a_construir)
+      [ -n "$carpetas" ] || echo "Ninguna base cambió: nada que construir."
+      for carpeta in $carpetas; do
         tecno=$(echo "$carpeta" | cut -d/ -f1)
         ver=$(echo "$carpeta" | cut -d/ -f2)
         [ "$tecno" = "PLANTILLA" ] && continue
