@@ -49,7 +49,7 @@ verificar:
         docker build -t "$img" "$carpeta"
         echo "== Trivy sobre $img (ALTA/CRITICA):"
         docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
-          aquasec/trivy:0.58.2 image --scanners vuln --severity HIGH,CRITICAL \
+          aquasec/trivy:0.58.2 image --scanners vuln --timeout 30m --severity HIGH,CRITICAL \
           --format table "$img" || true
         docker rmi "$img" >/dev/null 2>&1 || true
       done
