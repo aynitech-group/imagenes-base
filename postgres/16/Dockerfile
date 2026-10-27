@@ -12,7 +12,7 @@
 #       el propio build, no prometida en un comentario.
 #  Quien necesite gosu debe usar la variante `postgres-dorada:16-con-gosu`
 #  (gosu recompilado con el toolchain de Go corregido), no esta.
-FROM postgres:16-alpine@sha256:f4610795587492cd4fb887c2dc3de301b813278bb6f616992061141b5f15ac36
+FROM postgres:16-alpine@sha256:0cefaabd882e42bcb2a2f3dc56d3ce4770560ba62fd7f197f1a2e008fd5731ab
 
 LABEL org.opencontainers.image.source="https://github.com/aynitech-group/imagenes-base" \
       org.opencontainers.image.description="PostgreSQL 16 Alpine oficial + parches apk, sin gosu/su-exec (0 binarios Go). Base corporativa Aynitech." \
