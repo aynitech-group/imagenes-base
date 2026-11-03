@@ -157,10 +157,14 @@ RUN set -eux; \
 		ln -svT "$src" "/usr/local/bin/$dst"; \
 	done
 
-# Parches del sistema publicados después del digest de Alpine y aserción de publicación
+# Parches del sistema publicados después del digest de Alpine, pip al día y aserción de
+# publicación. El pip que deja ensurepip (25.0.1) arrastra CVE ya corregidos; la aserción
+# impide publicar la base con uno por debajo de 26.2.
 RUN set -eu \
  && apk upgrade --no-cache \
+ && PIP_ROOT_USER_ACTION=ignore python3 -m pip install --no-cache-dir --upgrade 'pip>=26.2' \
  && test "$(python3 -c 'import platform;print(platform.python_version())')" = "$PYTHON_VERSION" \
- && python3 -c 'import ssl, sqlite3, hashlib, zlib, ctypes; print("asercion OK: Python", __import__("sys").version.split()[0], "|", ssl.OPENSSL_VERSION)'
+ && python3 -c 'import ssl, sqlite3, hashlib, zlib, ctypes; print("asercion OK: Python", __import__("sys").version.split()[0], "|", ssl.OPENSSL_VERSION)' \
+ && python3 -c 'import pip, sys; v = tuple(int(x) for x in pip.__version__.split(".")[:2]); print("asercion OK: pip", pip.__version__); sys.exit(0 if v >= (26, 2) else 1)'
 
 CMD ["python3"]
