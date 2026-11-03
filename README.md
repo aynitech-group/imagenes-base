@@ -37,6 +37,14 @@ un paquete nuevo en ghcr siempre nace privado y exige un clic manual).
 | **dorada:python-3.11** | La imprime el job `publicar` al fusionar | Python 3.11.18 sobre Debian 13 slim con la receta oficial de docker-library (la imagen oficial aún traía 3.11.17) |
 | **dorada:vllm-0.32** | La imprime el job `publicar` al fusionar | vLLM 0.32.0 oficial con las actualizaciones de seguridad de Ubuntu (OpenSSL 3.0.13-0ubuntu3.16; la oficial trae 3.0.13-0ubuntu3.6). Pesa ~23 GB |
 
+## Bases añadidas en noviembre de 2026
+
+| Imagen (tag) | Línea `FROM` | Qué corrige |
+|---|---|---|
+| **dorada:clickhouse-25.8** | La imprime el job `publicar` al fusionar | ClickHouse 25.8 LTS oficial (Alpine) con los parches de Alpine posteriores a su digest: OpenSSL 3.5.9-r0 (libssl3 y libcrypto3), zlib 1.3.2-r1 y musl 1.2.6-r3. No cambia usuario, configuración ni punto de entrada. |
+
+**dorada:node-22, 3-nov-2026:** npm 12.2.1 y, dentro del npm de la base, undici 6.29.1, glob 14.0.3 y minimatch 11.0.4, cada uno con sus dependencias. npm 12 ya no baja dependencias desde git salvo que se autorice: un proyecto que las tenga debe usar `npm ci --allow-git=all` (o `allow-git` en su `.npmrc`).
+
 ## Verifícala tú mismo
 
 La receta de cada imagen está en su carpeta (p. ej. [`postgres/16/Dockerfile`](postgres/16/Dockerfile)).
