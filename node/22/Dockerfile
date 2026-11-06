@@ -11,7 +11,7 @@
 # ningún proyecto corporativo los usa y son superficie de ataque. La aserción
 # final impide publicar una base con alguna copia por debajo del mínimo corregido.
 # Catálogo y huellas: https://github.com/aynitech-group/imagenes-base
-FROM node:22-alpine@sha256:fe4f6d74e20370acb04ad889077d14d0f64a9c8ea6a42bc60cddf1e844699914
+FROM node:22-alpine@sha256:0e1754758c2df4cfa3e68d59e2e1b7374bb7fd9ea6328eaaacf15cc934af8202
 
 RUN set -eu \
  && apk upgrade --no-cache \
