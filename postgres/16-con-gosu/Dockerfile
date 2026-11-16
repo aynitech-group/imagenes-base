@@ -13,7 +13,7 @@ FROM golang:1.25-alpine AS gosu-actualizado
 RUN CGO_ENABLED=0 go install github.com/tianon/gosu@latest \
     && /go/bin/gosu --version
 
-FROM postgres:16-alpine@sha256:f377d590e5474681d4d7838635031a2b50647923b7abfa803ce9b5ff35d5c663
+FROM postgres:16-alpine@sha256:81e77a4833487b8132fe4b00bedd39dc3f74b8641e387f19312a48f7de218c2e
 
 LABEL org.opencontainers.image.source="https://github.com/aynitech-group/imagenes-base" \
       org.opencontainers.image.description="PostgreSQL 16 Alpine oficial + parches apk, con gosu RECOMPILADO con el toolchain de Go corregido. Base corporativa Aynitech." \
