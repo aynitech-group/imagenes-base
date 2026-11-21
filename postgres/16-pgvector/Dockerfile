@@ -14,8 +14,10 @@
 #    calcula una distancia: la construccion FALLA si pgvector no carga.
 #  MIGRAR DESDE UNA IMAGEN DEBIAN: la ordenacion de texto de glibc (en_US.utf8)
 #  no es la de musl. Inicializar con ICU (POSTGRES_INITDB_ARGS="--locale-provider=icu
-#  --icu-locale=en-US") y pasar los datos con pg_dump/pg_restore, nunca copiando el
-#  volumen de datos.
+#  --icu-locale=en-US-u-ka-shifted": ignora la puntuacion al ordenar, como glibc) y
+#  pasar los datos con pg_dump/pg_restore, nunca copiando el volumen de datos. El
+#  indice HNSW en paralelo necesita memoria compartida (shm) del tamano de
+#  maintenance_work_mem.
 #  Catalogo y huellas: https://github.com/aynitech-group/imagenes-base
 FROM postgres:16-alpine@sha256:1d5b02d3a9941fbd52437db4107f8c52d6297dac553ca1e5c299ebb3756b4857 AS pgvector
 ARG PGVECTOR_VERSION=0.8.7
@@ -50,7 +52,7 @@ USER postgres
 
 # Prueba: PostgreSQL temporal con ICU, la extension carga y calcula (y se borra).
 RUN set -eu; d=$(mktemp -d); \
-    initdb -D "$d" --auth=trust -E UTF8 --locale-provider=icu --icu-locale=en-US >/dev/null; \
+    initdb -D "$d" --auth=trust -E UTF8 --locale-provider=icu --icu-locale=en-US-u-ka-shifted >/dev/null; \
     pg_ctl -D "$d" -o "-c listen_addresses='' -k /tmp" -w start >/dev/null; \
     r=$(psql -h /tmp -d postgres -qAt -c "CREATE EXTENSION vector" \
           -c "SELECT extversion || ' ' || ('[1,2,3]'::vector <-> '[3,2,1]'::vector)::numeric(6,4) FROM pg_extension WHERE extname = 'vector'"); \
