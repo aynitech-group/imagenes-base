@@ -10,8 +10,8 @@
 #    3. Asercion: la construccion FALLA si quedara algun binario compilado con
 #       Go en los directorios de ejecutables. La limpieza queda demostrada en
 #       el propio build, no prometida en un comentario.
-#  Quien necesite gosu debe usar la variante `postgres-dorada:16-con-gosu`
-#  (gosu recompilado con el toolchain de Go corregido), no esta.
+#  La variante con gosu (`dorada:postgres-16-con-gosu`) se retiro el 21-nov-2026:
+#  ningun proyecto la usaba (ver «Bases retiradas» en el README).
 FROM postgres:16-alpine@sha256:1d5b02d3a9941fbd52437db4107f8c52d6297dac553ca1e5c299ebb3756b4857
 
 LABEL org.opencontainers.image.source="https://github.com/aynitech-group/imagenes-base" \

@@ -17,24 +17,33 @@ un paquete nuevo en ghcr siempre nace privado y exige un clic manual).
 | Imagen (tag) | Línea `FROM` lista para copiar | Qué corrige | CVE restantes |
 |---|---|---|---|
 | **dorada:postgres-16** | `FROM ghcr.io/aynitech-group/dorada:postgres-16@sha256:271fd82b2cbac540e1f48211ac90ea851455687fcb233a75b2c5f5f761670b6f` | Parches de Alpine (zlib 1.3.2-r1…) y elimina `gosu`/`su-exec` (binario Go con ~60 CVE de stdlib congelada; innecesario si tu contenedor arranca como `postgres`, que es lo normal) | 0 al publicarse |
-| **dorada:postgres-16-con-gosu** | `FROM ghcr.io/aynitech-group/dorada:postgres-16-con-gosu@sha256:7b4a73cb0235a03d37c5a26cb418f8ba3d91e3d069a75c44dfc9ec51c7078017` | Igual que la estándar, pero CON gosu — recompilado con Go 1.27 (1.27.4 el 20-nov-2026; Go 1.25 ya no recibe parches) y con sus dependencias de Go al día (`golang.org/x/sys`, `github.com/moby/sys/user`); su-exec enlaza al gosu nuevo | 0 al publicarse |
 | **dorada:node-22** | `FROM ghcr.io/aynitech-group/dorada:node-22@sha256:fb12459014bab526ea84fea51e4983a4a19c054bae06ef8a4229900a03d3af71` | Parches de Alpine, npm actualizado a la última versión y cada copia vulnerable de sus dependencias internas sustituida por la corregida (brace-expansion, ip-address, http-cache-semantics, postcss-selector-parser, undici); retira corepack y yarn. Aserción de mínimos en la construcción | 0 al publicarse |
-| **dorada:alpine-3.22** | `FROM ghcr.io/aynitech-group/dorada:alpine-3.22@sha256:84fe62ce7a7f301e63c67a3b62689e4aa83abe6cedb1878c9f272221e521b020` | Todos los parches del sistema publicados tras el digest oficial (zlib 1.3.2-r1…). Pensada como etapa final (runtime) de imágenes multi-stage; aserción de zlib | 0 al publicarse |
 
 > Los nombres antiguos (`postgres-dorada:16`, `postgres-dorada:16-con-gosu`,
 > `node-dorada:22`) siguen publicados y públicos con sus huellas intactas:
 > ningún proyecto anclado se rompe. Lo nuevo se publica solo bajo `dorada`.
 
-> ¿Necesitas `gosu`? Usa la variante `16-con-gosu` de la tabla: trae gosu
-> recompilado con el toolchain de Go corregido (verifícalo: `docker run --rm
-> --entrypoint gosu ghcr.io/aynitech-group/dorada:postgres-16-con-gosu --version`).
+## Bases retiradas
+
+Se retiraron el **21-nov-2026** porque ningún proyecto las usaba. Su receta ya no
+está en el repositorio, así que la actualización nocturna **no las vuelve a
+parchear**. Su última imagen sigue publicada y pública: un proyecto anclado a
+ella no se rompe, pero debe pasar a la base indicada.
+
+| Imagen (tag) | Última huella publicada | Usar en su lugar |
+|---|---|---|
+| **dorada:alpine-3.22** | `sha256:47d37bd063cb8f6807583876ad697d83821e0d9910c7a650bc641dd04be411d8` | `dorada:alpine-3.24` (el soporte de Alpine 3.22 termina el 1-may-2027) |
+| **dorada:python-3.11** | `sha256:ae90f2b9eaf8ce6daf1b95c60dabecc8165573f918e6bdcf3751aef26863459d` | `dorada:python-3.12` |
+| **dorada:postgres-16-con-gosu** | `sha256:25f6070fa167b7290a93cc8679e54d8a2d6509c0d8617926c1535dd328f57d32` | `dorada:postgres-16` (arranca como `postgres`; no necesita gosu) |
+
+La receta de cada una sigue en el historial de git (commit anterior al de su
+retirada), por si hiciera falta recuperarla.
 
 ## Bases añadidas en octubre de 2026
 
 | Imagen (tag) | Línea `FROM` | Qué corrige |
 |---|---|---|
 | **dorada:python-3.12** | `FROM ghcr.io/aynitech-group/dorada:python-3.12@sha256:55db41fba7d81974af2705141912d524f91dfe21619e4c2bdb4dc03c11d29d25` | Python 3.12.16 sobre Alpine 3.24 con la receta oficial de docker-library (la imagen oficial aún traía 3.12.15) |
-| **dorada:python-3.11** | La imprime el job `publicar` al fusionar | Python 3.11.18 sobre Debian 13 slim con la receta oficial de docker-library (la imagen oficial aún traía 3.11.17); desde el 20-nov-2026, también pip, setuptools y wheel al día (el pip 24.0 de Python 3.11 y el setuptools 79 de la receta oficial arrastraban CVE corregidos) |
 | **dorada:vllm-0.32** | La imprime el job `publicar` al fusionar | vLLM 0.32.0 oficial con las actualizaciones de seguridad de Ubuntu (OpenSSL 3.0.13-0ubuntu3.16; la oficial trae 3.0.13-0ubuntu3.6). Pesa ~23 GB |
 
 ## Bases añadidas en noviembre de 2026
@@ -49,10 +58,10 @@ un paquete nuevo en ghcr siempre nace privado y exige un clic manual).
 
 **dorada:node-22, 3-nov-2026:** npm 12.2.1 y, dentro del npm de la base, undici 6.29.1, glob 14.0.3 y minimatch 11.0.4, cada uno con sus dependencias. npm 12 ya no baja dependencias desde git salvo que se autorice: un proyecto que las tenga debe usar `npm ci --allow-git=all` (o `allow-git` en su `.npmrc`).
 
-**dorada:python-3.12 y python-3.11:** pip lleva dentro `pkg_resources` copiado de
+**dorada:python-3.12:** pip lleva dentro `pkg_resources` copiado de
 setuptools 70.3.0 y lo declara en su SBOM (`pip/_vendor/bom.cdx.json`). Los
 escáneres que leen ese SBOM (Trivy, por ejemplo) cuentan 3 CVE de setuptools
-70.3.0 en las dos bases. No tienen arreglo hasta que pip actualice esa copia;
+70.3.0 en la base. No tienen arreglo hasta que pip actualice esa copia;
 cuando lo haga, la actualización nocturna recogerá el pip nuevo sola.
 
 ## Actualización nocturna

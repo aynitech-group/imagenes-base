@@ -1,0 +1,27 @@
+# Lo que se genera al probar las bases en local y nunca debe subirse al repositorio.
+# OJO: este fichero NO saca nada del análisis de AyniInspect ni del pipeline: los dos trabajan con
+# lo que ya está en el commit. Solo evita que se añadan por error ficheros que no existen en él.
+
+# Credenciales y configuración local (red de seguridad: nunca van en una receta).
+.env
+.env.*
+*.pem
+*.key
+.docker/config.json
+
+# Imágenes exportadas y resultados de escáneres al probar a mano.
+*.tar
+*.tar.gz
+*.tar.zst
+trivy-*.json
+grype-*.json
+sbom*.json
+*.log
+
+# Cachés de herramientas y del editor.
+.cache/
+__pycache__/
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
