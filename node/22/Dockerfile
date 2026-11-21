@@ -9,12 +9,27 @@
 # su propio node_modules, y la prueba de abajo comprueba que npm sigue
 # funcionando con ellas. corepack y yarn se retiran:
 # ningún proyecto corporativo los usa y son superficie de ataque. La aserción
-# final impide publicar una base con alguna copia por debajo del mínimo corregido.
+# final impide publicar una base con alguna copia por debajo del mínimo corregido,
+# y la del principio, con OpenSSL o zlib de Alpine por debajo del mínimo.
 # Catálogo y huellas: https://github.com/aynitech-group/imagenes-base
 FROM node:22-alpine@sha256:1314fb30ec37592d5845e5a160d522c0e680972aa534549940b8d73bde88481a
 
+# La actualización nocturna pasa aquí una marca nueva cuando el repositorio de
+# Alpine o npm tienen parches que esta imagen aún no lleva: invalida la caché
+# desde este punto y todo lo de abajo se vuelve a ejecutar.
+ARG PARCHES
+
+# La imagen oficial deja un índice de apk viejo en /var/cache/apk: se borra.
 RUN set -eu \
  && apk upgrade --no-cache \
+ && rm -rf /var/cache/apk/* \
+ && for req in libssl3=3.5.9-r1 libcrypto3=3.5.9-r1 zlib=1.4-r0; do \
+      pkg=${req%%=*}; min=${req#*=}; \
+      v=$(apk list -I "$pkg" 2>/dev/null | sed -n "s/^$pkg-\([0-9][^ ]*\) .*/\1/p" | head -n 1); \
+      [ -n "$v" ] || { echo "falta $pkg"; exit 1; }; \
+      [ "$(apk version -t "$v" "$min")" != "<" ] || { echo "VULNERABLE: $pkg $v (mínimo $min)"; exit 1; }; \
+      echo "$pkg $v (mínimo $min)"; \
+    done \
  && npm install -g npm@latest --no-fund --no-audit \
  && cd /tmp \
  && for spec in brace-expansion@latest ip-address@latest http-cache-semantics@latest \

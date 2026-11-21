@@ -155,12 +155,30 @@ RUN set -eux; \
 		ln -svT "$src" "/usr/local/bin/$dst"; \
 	done
 
-# Parches del sistema publicados después del digest de Debian y aserción de publicación
+# La actualización nocturna pasa aquí una marca nueva cuando el repositorio de Debian
+# o pip tienen parches que esta imagen aún no lleva: invalida la caché desde este punto
+# y se vuelven a aplicar sin recompilar Python.
+ARG PARCHES
+
+# Parches del sistema publicados después del digest de Debian, pip/setuptools/wheel al
+# día y aserción de publicación. El pip que trae Python 3.11 (24.0) y el setuptools de la
+# receta oficial (79.0.1, con wheel y jaraco.context viejos dentro de setuptools/_vendor)
+# arrastran CVE ya corregidos; la aserción impide publicar la base con alguno por debajo
+# del mínimo, o con zlib1g sin el parche de seguridad de Debian.
 RUN set -eu \
  && apt-get update \
  && apt-get upgrade -y --no-install-recommends \
  && rm -rf /var/lib/apt/lists/* \
+ && dpkg --compare-versions "$(dpkg-query -W -f='${Version}' zlib1g)" ge '1:1.3.dfsg+really1.3.1-1+deb13u1' \
+ && PIP_ROOT_USER_ACTION=ignore python3 -m pip install --disable-pip-version-check --no-cache-dir --no-compile \
+      --upgrade 'pip>=26.2' 'setuptools>=84.1.0' 'wheel>=0.46.2' \
  && test "$(python3 -c 'import platform;print(platform.python_version())')" = "$PYTHON_VERSION" \
- && python3 -c 'import ssl, sqlite3, hashlib, zlib, ctypes; print("asercion OK: Python", __import__("sys").version.split()[0], "|", ssl.OPENSSL_VERSION)'
+ && python3 -c 'import ssl, sqlite3, hashlib, zlib, ctypes; print("asercion OK: Python", __import__("sys").version.split()[0], "|", ssl.OPENSSL_VERSION)' \
+ && python3 -c 'import sys; from importlib.metadata import version as v; \
+      n = lambda s: tuple(int(x) for x in s.split(".")[:3]); \
+      m = {"pip": "26.2", "setuptools": "84.1.0", "wheel": "0.46.2"}; \
+      mal = [f"{p} {v(p)} (minimo {x})" for p, x in m.items() if n(v(p)) < n(x)]; \
+      print("asercion OK:" if not mal else "VULNERABLE:", ", ".join(mal or [f"{p} {v(p)}" for p in m])); \
+      sys.exit(1 if mal else 0)'
 
 CMD ["python3"]

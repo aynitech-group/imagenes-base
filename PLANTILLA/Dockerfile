@@ -15,7 +15,12 @@ LABEL org.opencontainers.image.source="https://github.com/aynitech-group/imagene
 
 # ── Hueco 2: parches del sistema ──────────────────────────────────────────────
 # Deja SOLO la linea de tu familia y borra la otra.
-RUN apk upgrade --no-cache
+# ARG PARCHES no se toca: cada noche, si el repositorio de tu distribucion tiene
+# parches que tu base publicada aun no lleva, la actualizacion nocturna pasa una
+# marca nueva aqui, la cache se invalida desde este punto y el upgrade vuelve a
+# correr (sin rehacer lo que este por encima). Ponlo justo antes del upgrade.
+ARG PARCHES
+RUN apk upgrade --no-cache && rm -rf /var/cache/apk/*
 # RUN apt-get update && apt-get upgrade -y && rm -rf /var/lib/apt/lists/*
 
 # ── Hueco 3 (opcional): limpieza ──────────────────────────────────────────────

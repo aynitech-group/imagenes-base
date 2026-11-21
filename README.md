@@ -17,7 +17,7 @@ un paquete nuevo en ghcr siempre nace privado y exige un clic manual).
 | Imagen (tag) | Línea `FROM` lista para copiar | Qué corrige | CVE restantes |
 |---|---|---|---|
 | **dorada:postgres-16** | `FROM ghcr.io/aynitech-group/dorada:postgres-16@sha256:1f95fdaeeac7336068c67dff2cdfb882e10279a5c653f7ebabf6e99e8cee5cea` | Parches de Alpine (zlib 1.3.2-r1…) y elimina `gosu`/`su-exec` (binario Go con ~60 CVE de stdlib congelada; innecesario si tu contenedor arranca como `postgres`, que es lo normal) | 0 al publicarse |
-| **dorada:postgres-16-con-gosu** | `FROM ghcr.io/aynitech-group/dorada:postgres-16-con-gosu@sha256:7b4a73cb0235a03d37c5a26cb418f8ba3d91e3d069a75c44dfc9ec51c7078017` | Igual que la estándar, pero CON gosu — recompilado con Go 1.25.14 (el aviso exigía ≥1.25.7); su-exec enlaza al gosu nuevo | 0 al publicarse |
+| **dorada:postgres-16-con-gosu** | `FROM ghcr.io/aynitech-group/dorada:postgres-16-con-gosu@sha256:7b4a73cb0235a03d37c5a26cb418f8ba3d91e3d069a75c44dfc9ec51c7078017` | Igual que la estándar, pero CON gosu — recompilado con Go 1.27 (1.27.4 el 20-nov-2026; Go 1.25 ya no recibe parches) y con sus dependencias de Go al día (`golang.org/x/sys`, `github.com/moby/sys/user`); su-exec enlaza al gosu nuevo | 0 al publicarse |
 | **dorada:node-22** | `FROM ghcr.io/aynitech-group/dorada:node-22@sha256:fb12459014bab526ea84fea51e4983a4a19c054bae06ef8a4229900a03d3af71` | Parches de Alpine, npm actualizado a la última versión y cada copia vulnerable de sus dependencias internas sustituida por la corregida (brace-expansion, ip-address, http-cache-semantics, postcss-selector-parser, undici); retira corepack y yarn. Aserción de mínimos en la construcción | 0 al publicarse |
 | **dorada:alpine-3.22** | `FROM ghcr.io/aynitech-group/dorada:alpine-3.22@sha256:84fe62ce7a7f301e63c67a3b62689e4aa83abe6cedb1878c9f272221e521b020` | Todos los parches del sistema publicados tras el digest oficial (zlib 1.3.2-r1…). Pensada como etapa final (runtime) de imágenes multi-stage; aserción de zlib | 0 al publicarse |
 
@@ -34,16 +34,49 @@ un paquete nuevo en ghcr siempre nace privado y exige un clic manual).
 | Imagen (tag) | Línea `FROM` | Qué corrige |
 |---|---|---|
 | **dorada:python-3.12** | `FROM ghcr.io/aynitech-group/dorada:python-3.12@sha256:55db41fba7d81974af2705141912d524f91dfe21619e4c2bdb4dc03c11d29d25` | Python 3.12.16 sobre Alpine 3.24 con la receta oficial de docker-library (la imagen oficial aún traía 3.12.15) |
-| **dorada:python-3.11** | La imprime el job `publicar` al fusionar | Python 3.11.18 sobre Debian 13 slim con la receta oficial de docker-library (la imagen oficial aún traía 3.11.17) |
+| **dorada:python-3.11** | La imprime el job `publicar` al fusionar | Python 3.11.18 sobre Debian 13 slim con la receta oficial de docker-library (la imagen oficial aún traía 3.11.17); desde el 20-nov-2026, también pip, setuptools y wheel al día (el pip 24.0 de Python 3.11 y el setuptools 79 de la receta oficial arrastraban CVE corregidos) |
 | **dorada:vllm-0.32** | La imprime el job `publicar` al fusionar | vLLM 0.32.0 oficial con las actualizaciones de seguridad de Ubuntu (OpenSSL 3.0.13-0ubuntu3.16; la oficial trae 3.0.13-0ubuntu3.6). Pesa ~23 GB |
 
 ## Bases añadidas en noviembre de 2026
 
 | Imagen (tag) | Línea `FROM` | Qué corrige |
 |---|---|---|
-| **dorada:clickhouse-25.8** | La imprime el job `publicar` al fusionar | ClickHouse 25.8 LTS oficial (Alpine) con los parches de Alpine posteriores a su digest: OpenSSL 3.5.9-r0 (libssl3 y libcrypto3), zlib 1.3.2-r1 y musl 1.2.6-r3. No cambia usuario, configuración ni punto de entrada. |
+| **dorada:clickhouse-25.8** | La imprime el job `publicar` al fusionar | ClickHouse 25.8 LTS oficial (Alpine) con los parches de Alpine posteriores a su digest: OpenSSL 3.5.9-r1 (libssl3 y libcrypto3), zlib 1.4-r0 y musl 1.2.6-r3. No cambia usuario, configuración ni punto de entrada. |
+| **dorada:alpine-3.24** | La imprime el job `publicar` al fusionar | Alpine 3.24 oficial con todos los parches del sistema publicados tras su digest (OpenSSL 3.5.9-r1, zlib 1.4-r0, musl 1.2.6-r3). Base de las imágenes de análisis de AyniInspect y etapa final para imágenes multi-stage; aserción de mínimos |
 
 **dorada:node-22, 3-nov-2026:** npm 12.2.1 y, dentro del npm de la base, undici 6.29.1, glob 14.0.3 y minimatch 11.0.4, cada uno con sus dependencias. npm 12 ya no baja dependencias desde git salvo que se autorice: un proyecto que las tenga debe usar `npm ci --allow-git=all` (o `allow-git` en su `.npmrc`).
+
+**dorada:python-3.12 y python-3.11:** pip lleva dentro `pkg_resources` copiado de
+setuptools 70.3.0 y lo declara en su SBOM (`pip/_vendor/bom.cdx.json`). Los
+escáneres que leen ese SBOM (Trivy, por ejemplo) cuentan 3 CVE de setuptools
+70.3.0 en las dos bases. No tienen arreglo hasta que pip actualice esa copia;
+cuando lo haga, la actualización nocturna recogerá el pip nuevo sola.
+
+## Actualización nocturna
+
+Cada noche (schedule de las 00:00 de Lima, `bin/actualizar-nocturno.sh`) se
+reconstruye y publica una base si se da alguno de estos motivos:
+
+1. **Upstream publicó un digest nuevo** para alguna imagen de sus `FROM`: la
+   final y las de compilación (p. ej. el `golang` con el que se recompila gosu).
+2. **La dorada publicada tiene parches pendientes** (`bin/parches-pendientes.sh`):
+   paquetes de apk o apt con versión nueva en los repositorios de su
+   distribución, o pip, setuptools o wheel con versión nueva. Los parches salen
+   en los repositorios semanas antes que la imagen oficial nueva. Hasta el
+   20-nov-2026 solo existía el motivo 1, y 6 de las 7 bases tenían CVE ya
+   corregidas en su distribución. La base de vLLM solo cuenta los paquetes del
+   repositorio de seguridad de Ubuntu, que son los únicos que instala.
+
+Para el motivo 2, el `ARG PARCHES` de cada receta recibe una marca nueva: la
+caché se invalida justo antes del `apk upgrade` / `apt-get upgrade` y los
+parches se vuelven a aplicar sin recompilar lo anterior (Python, por ejemplo).
+Si la imagen reconstruida sigue con los mismos pendientes, **no se publica**:
+la reconstrucción no corregiría nada y solo cambiaría la huella. Un fallo en
+una base no detiene las demás, y el job termina en error si hubo alguno.
+
+Prueba sin publicar nada: `SIMULAR=1 sh bin/actualizar-nocturno.sh` (no inicia
+sesión, no cambia ficheros, no construye ni publica; solo informa).
+`BASES="alpine/3.24 node/22"` limita las carpetas.
 
 ## Verifícala tú mismo
 

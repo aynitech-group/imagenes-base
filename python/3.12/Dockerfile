@@ -157,11 +157,28 @@ RUN set -eux; \
 		ln -svT "$src" "/usr/local/bin/$dst"; \
 	done
 
+# La actualización nocturna pasa aquí una marca nueva cuando el repositorio de Alpine
+# o pip tienen parches que esta imagen aún no lleva: invalida la caché desde este punto
+# y se vuelven a aplicar sin recompilar Python.
+ARG PARCHES
+
 # Parches del sistema publicados después del digest de Alpine, pip al día y aserción de
 # publicación. El pip que deja ensurepip (25.0.1) arrastra CVE ya corregidos; la aserción
-# impide publicar la base con uno por debajo de 26.2.
+# impide publicar la base con uno por debajo de 26.2, o con OpenSSL, Kerberos o zlib de
+# Alpine por debajo del mínimo corregido.
+# Nota: pip lleva dentro pkg_resources copiado de setuptools 70.3.0 y lo declara en su
+# SBOM (pip/_vendor/bom.cdx.json); algunos escáneres lo cuentan como setuptools 70.3.0.
+# No tiene arreglo hasta que pip actualice esa copia.
 RUN set -eu \
  && apk upgrade --no-cache \
+ && rm -rf /var/cache/apk/* \
+ && for req in libssl3=3.5.9-r1 libcrypto3=3.5.9-r1 zlib=1.4-r0 krb5-libs=1.22.3-r0; do \
+      pkg=${req%%=*}; min=${req#*=}; \
+      v=$(apk list -I "$pkg" 2>/dev/null | sed -n "s/^$pkg-\([0-9][^ ]*\) .*/\1/p" | head -n 1); \
+      [ -n "$v" ] || { echo "falta $pkg"; exit 1; }; \
+      [ "$(apk version -t "$v" "$min")" != "<" ] || { echo "VULNERABLE: $pkg $v (mínimo $min)"; exit 1; }; \
+      echo "$pkg $v (mínimo $min)"; \
+    done \
  && PIP_ROOT_USER_ACTION=ignore python3 -m pip install --no-cache-dir --upgrade 'pip>=26.2' \
  && test "$(python3 -c 'import platform;print(platform.python_version())')" = "$PYTHON_VERSION" \
  && python3 -c 'import ssl, sqlite3, hashlib, zlib, ctypes; print("asercion OK: Python", __import__("sys").version.split()[0], "|", ssl.OPENSSL_VERSION)' \
