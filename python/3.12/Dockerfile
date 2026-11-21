@@ -31,7 +31,9 @@ RUN set -eux; \
 		tzdata \
 	;
 
-ENV GPG_KEY 7169605F62C751356D054A26A821E680E5FA6305
+# La huella de la clave con que python.org firma el tarball: solo hace falta al construir (gpg --verify),
+# asi que va en ARG y no en ENV, que la dejaria como variable de entorno de la imagen final (DS-0031).
+ARG GPG_KEY=7169605F62C751356D054A26A821E680E5FA6305
 ENV PYTHON_VERSION 3.12.16
 ENV PYTHON_SHA256 b5796915dc45ff745cfb4e990a7e7c93d6f546328a102ce31448d69ebc37575c
 

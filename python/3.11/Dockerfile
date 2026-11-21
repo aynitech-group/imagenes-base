@@ -35,7 +35,9 @@ RUN set -eux; \
 	; \
 	apt-get dist-clean
 
-ENV GPG_KEY A035C8C19219BA821ECEA86B64E628F8D684696D
+# La huella de la clave con que python.org firma el tarball: solo hace falta al construir (gpg --verify),
+# asi que va en ARG y no en ENV, que la dejaria como variable de entorno de la imagen final (DS-0031).
+ARG GPG_KEY=A035C8C19219BA821ECEA86B64E628F8D684696D
 ENV PYTHON_VERSION 3.11.18
 ENV PYTHON_SHA256 9120e0a653868f6e3698d36cdd99e5a58903ec9469e448f21d98f7b16d8fa290
 
