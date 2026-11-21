@@ -11,10 +11,21 @@ FROM vllm/vllm-openai:v0.32.0@sha256:befccf0e7e4089aa23926bb6f887a85c0d46c2a99e6
 
 LABEL org.opencontainers.image.source="https://github.com/aynitech-group/imagenes-base"
 
+# De cada paquete actualizable se instala la version MAS NUEVA DEL REPOSITORIO DE SEGURIDAD (paquete=version),
+# aunque -updates traiga otra aun mas nueva: antes se miraba solo la candidata, que es la de -updates cuando es
+# mayor, y esos paquetes se quedaban sin su parche (linux-libc-dev 6.8.0-149 de -security con la 151 en -updates
+# siguio en la 147, 21-nov-2026). La asercion de despues impide publicar si queda alguno.
 RUN set -eu \
+ && seguridad() { apt list --upgradable 2>/dev/null | awk -F/ 'NR > 1 { print $1 }' | while read -r p; do \
+      v=$(apt-cache madison "$p" | awk -F'|' '$3 ~ /-security\// { gsub(/ /, "", $2); print $2; exit }'); \
+      i=$(dpkg-query -W -f='${Version}' "$p" 2>/dev/null || true); \
+      if [ -n "$v" ] && [ -n "$i" ] && dpkg --compare-versions "$v" gt "$i"; then echo "$p=$v"; fi; \
+    done; } \
  && apt-get update \
- && seguridad=$(apt list --upgradable 2>/dev/null | awk -F/ '/-security/ {print $1}') \
- && if [ -n "$seguridad" ]; then apt-get install -y --only-upgrade --no-install-recommends $seguridad; fi \
+ && pendientes=$(seguridad) \
+ && if [ -n "$pendientes" ]; then apt-get install -y --only-upgrade --no-install-recommends $pendientes; fi \
+ && quedan=$(seguridad) \
+ && { [ -z "$quedan" ] || { echo "Parches de seguridad sin instalar: $quedan"; exit 1; }; } \
  && rm -rf /var/lib/apt/lists/* \
  && v=$(dpkg-query -W -f='${Version}' libssl3t64) \
  && dpkg --compare-versions "$v" ge 3.0.13-0ubuntu3.16 || { echo "OpenSSL sin parchear: $v"; exit 1; } \

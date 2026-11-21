@@ -18,13 +18,24 @@ if command -v apk >/dev/null 2>&1; then
   apk version -l '<' 2>/dev/null | awk 'NR > 1 && $2 == "<" { print "apk " $1 " -> " $3 }'
 elif command -v apt-get >/dev/null 2>&1; then
   apt-get update -qq >/dev/null 2>&1 || { echo "ERROR: apt-get update"; exit 1; }
-  apt-get -s upgrade 2>/dev/null | grep '^Inst ' > /tmp/pendientes-apt || true
   if [ "$MODO" = seguridad ]; then
-    grep -e '-security' /tmp/pendientes-apt > /tmp/pendientes-apt.s || true
-    mv /tmp/pendientes-apt.s /tmp/pendientes-apt
+    # La version MAS NUEVA DEL REPOSITORIO DE SEGURIDAD de cada paquete actualizable, si es mas
+    # nueva que la instalada, aunque -updates traiga otra aun mas nueva (la receta de vLLM instala
+    # esa, la de seguridad). Antes se miraba la candidata de `apt-get -s upgrade`, que es la de
+    # -updates cuando es mayor, y el paquete no contaba: linux-libc-dev 6.8.0-149 de -security con
+    # la 151 en -updates se quedo en la 147 (21-nov-2026).
+    apt list --upgradable 2>/dev/null | awk -F/ 'NR > 1 { print $1 }' | while read -r p; do
+      v=$(apt-cache madison "$p" | awk -F'|' '$3 ~ /-security\// { gsub(/ /, "", $2); print $2; exit }')
+      i=$(dpkg-query -W -f='${Version}' "$p" 2>/dev/null || true)
+      if [ -n "$v" ] && [ -n "$i" ] && dpkg --compare-versions "$v" gt "$i"; then
+        echo "apt $p $i -> $v"
+      fi
+    done
+  else
+    apt-get -s upgrade 2>/dev/null | grep '^Inst ' > /tmp/pendientes-apt || true
+    awk '{ v = $4; gsub(/[()]/, "", v); print "apt " $2 " " $3 " -> " v }' /tmp/pendientes-apt
+    rm -f /tmp/pendientes-apt
   fi
-  awk '{ v = $4; gsub(/[()]/, "", v); print "apt " $2 " " $3 " -> " v }' /tmp/pendientes-apt
-  rm -f /tmp/pendientes-apt
 else
   echo "ERROR: la imagen no tiene apk ni apt-get"
   exit 1
