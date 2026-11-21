@@ -29,6 +29,10 @@ elif command -v apt-get >/dev/null 2>&1; then
       i=$(dpkg-query -W -f='${Version}' "$p" 2>/dev/null || true)
       if [ -n "$v" ] && [ -n "$i" ] && dpkg --compare-versions "$v" gt "$i"; then
         echo "apt $p $i -> $v"
+      elif [ "$p" = linux-libc-dev ]; then
+        # La excepcion de la receta de vLLM: las cabeceras del kernel van a su ultima version (tambien -updates).
+        c=$(apt-cache policy linux-libc-dev | awk '/Candidate:/ { print $2 }')
+        if [ -n "$c" ] && [ -n "$i" ] && dpkg --compare-versions "$c" gt "$i"; then echo "apt $p $i -> $c"; fi
       fi
     done
   else
